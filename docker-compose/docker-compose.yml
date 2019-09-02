@@ -1,0 +1,91 @@
+version: '3.4'
+
+services:
+  postgres_server:
+    build: ./database/
+    image: teenrobin22/postgres_server:latest
+    # environment:
+    #   - POSTGRES_PASSWORD=123
+    #   - POSTGRES_DB=cineapp
+    #   - POSTGRES_USER=postgres
+    volumes: 
+      - my-data:/var/lib/postgres/
+    restart: on-failure
+    networks: 
+      - backend
+
+  apimicro1:
+    build: ./SpringMicro1/
+    image: teenrobin22/apimicro1:latest
+    #environment: 
+    #   - host=postgres_server
+    #   - database=cineapp
+    #   - username=postgres
+    #   - password=123
+    ports:
+      - 8080:8080
+    depends_on: 
+      - postgres_server
+      - apiseguridad
+    restart: on-failure
+    networks: 
+      - backend
+
+  apimicro2:
+    build: ./SpringMicro2/
+    image: teenrobin22/apimicro2:latest
+    #environment: 
+    #   - host=postgres_server
+    #   - database=cineapp
+    #   - username=postgres
+    #   - password=123
+    ports:
+      - 8081:8081
+    depends_on: 
+      - postgres_server
+      - apiseguridad
+    restart: on-failure
+    networks: 
+      - backend
+
+  apiseguridad:
+    build: ./SpringAuthServer/
+    image: teenrobin22/apiseguridad:latest
+    environment: 
+      - SERVER_SERVLET_CONTEXT_PATH=/seguridad
+    ports:
+      - 9999:9999
+    depends_on: 
+      - postgres_server
+    restart: on-failure
+    networks:
+      - backend
+
+  proxy:
+    build: ./proxy-backend/
+    image: teenrobin22/apiproxy:latest
+    ports:
+      - "80:80"
+    depends_on: 
+      - apimicro1
+      - apimicro2
+      - apiseguridad
+    restart: on-failure
+    networks:
+      - backend
+
+  frontend:
+    build: ./front-micro/
+    image: teenrobin22/frontend:latest
+    ports:
+      - 8090:80
+    networks:
+      - frontend
+    
+
+volumes:
+  my-data:
+
+networks:
+  backend: 
+  frontend:
